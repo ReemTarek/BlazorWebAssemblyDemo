@@ -1,0 +1,51 @@
+﻿@page "/scanner"
+@inject IJSRuntime JsRuntime
+@using BlazorWebAssemblyDemo.Shared
+@inject HttpClient Http
+
+
+<HeadContent>
+        <link href="css/scannerstyle.css" rel="stylesheet" />
+
+</HeadContent>
+<h3>QR Scanner</h3>
+<div id="container">
+      <h1>QR Code Scanner</h1>
+
+      <a id="btn-scan-qr">
+        <img src="https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2017/07/1499401426qr_icon.svg">
+      </a>
+
+      <canvas hidden="" id="qr-canvas"></canvas>
+
+      <div id="qr-result" hidden="">
+        <b>Data:</b> <p id="outputData">@OutData</p>
+        <button class="btn btn-sucess" @onclick="saveinDB">Save in DB</button>
+      </div>
+    </div>
+ 
+@code {
+    public string OutData = "";
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        await JsRuntime.InvokeVoidAsync("includeScannerLibraryjs");
+
+        await JsRuntime.InvokeVoidAsync("includeScannerjs");
+    }
+    public void saveinDB()
+    {
+        SaveProduct();
+    }
+    async Task SaveProduct()
+    {
+       
+            // Create new product
+            Products newProduct = new Products();
+            newProduct.ProductName = OutData;
+            // Save the result
+            await Http.PostAsJsonAsync("api/Products", newProduct);
+      
+    }
+
+}

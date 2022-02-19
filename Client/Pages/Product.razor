@@ -1,0 +1,140 @@
+﻿@page "/products"
+@using BlazorWebAssemblyDemo.Shared
+@inject HttpClient Http
+
+
+<h3>Product</h3>
+<button class="btn btn-success" @onclick="AddNewProduct"> Add New Product</button>
+ @if (ShowPopup)
+            {
+                <!-- This is the popup to create or edit a product -->
+                <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 class="modal-title">Edit Product</h3>
+                                <!-- Button to close the popup -->
+                                <button type="button" class="close"
+                                @onclick="ClosePopup">
+                                    <span aria-hidden="true">X</span>
+                                </button>
+                            </div>
+                            <!-- Edit form for the current product -->
+                            <div class="modal-body">
+                                <input class="form-control" type="text"
+                                placeholder="Product Name"
+                               @bind="product.ProductName" />
+
+                                <br />
+                                <!-- Button to save the product -->
+                                <button class="btn btn-success"
+                                @onclick="SaveProduct">
+                                    Save
+                                </button>
+                                 @if (product.Id > 0)
+                                {                                    
+                                    <!-- Button to delete the forecast -->
+                                    <button class="btn btn-danger"
+                                    @onclick="DeleteProduct">
+                                    Delete
+                                </button>
+                                }
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            }
+<table class="table">
+    <thead>
+        <tr>
+            <td>id</td>
+            <td>Name</td>
+            <td>Edit</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var product in products)
+        {
+            <tr>
+                <td>
+                    @product.Id
+                </td>
+                <td>
+                    @product.ProductName
+                </td>
+                <td>
+                     <button class="btn btn-primary" @onclick="(() => EditProduct(product))">Edit</button>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+@code {
+    List<Products> products =  new List<Products>();
+
+    protected  override async Task OnInitializedAsync()
+    {
+        products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+    }
+
+
+
+    Products product = new Products();
+    bool ShowPopup = false;
+    void ClosePopup()
+    {
+        // Close the Popup
+        ShowPopup = false;
+    }
+    void AddNewProduct()
+    {
+        // Make new product
+        product = new Products();
+        // Set Id to 0 so we know it is a new record
+        product.Id = 0;
+        // Open the Popup
+        ShowPopup = true;
+    }
+    async Task SaveProduct()
+    {
+        // Close the Popup
+        ShowPopup = false;
+        // A new product will have the Id set to 0
+        if (product.Id == 0)
+        {
+            // Create new product
+            Products newProduct = new Products();
+            newProduct.ProductName = product.ProductName;
+            // Save the result
+            await Http.PostAsJsonAsync("api/Products", newProduct);
+        }
+        else
+        {
+            // This is an update
+             await Http.PutAsJsonAsync("api/Products", product);
+        }
+        // Get the products 
+         products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+    }
+    void EditProduct(Products productEdit)
+    {
+        // Set the selected product
+        // as the current product
+        product = productEdit;
+        // Open the Popup
+        ShowPopup = true;
+    }
+
+    async Task DeleteProduct()
+    {
+        // Close the Popup
+        ShowPopup = false;
+        // Delete the product
+        await Http.DeleteAsync("api/Products/"+product.Id);
+        // Get the products
+        products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+    }
+ 
+
+}

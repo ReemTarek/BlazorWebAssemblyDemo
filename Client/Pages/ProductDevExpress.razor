@@ -1,0 +1,73 @@
+﻿@page "/productsDevexpress"
+@using BlazorWebAssemblyDemo.Shared
+@using Newtonsoft.Json
+@inject HttpClient Http
+
+<h3>Product DevExpress</h3>
+@if (products == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <DxDataGrid @ref="@grid"
+                Data="@products"
+                RowRemovingAsync="@OnRowRemovingAsync"
+                RowUpdatingAsync="@OnRowUpdatingAsync"
+                RowInsertingAsync="@OnRowInsertingAsync"
+                InitNewRow="@OnInitNewRowAsync"
+                CssClass="w-100"
+                PageSize="12"
+                KeyFieldName="@nameof(Products.Id)"
+                EditMode="DataGridEditMode.PopupEditForm">
+        <DxDataGridCommandColumn Width="120px" />
+        <DxDataGridColumn Field="@nameof(Products.ProductName)" />
+    </DxDataGrid>
+}
+
+@code {
+    readonly TaskCompletionSource<Products> firstProductTcs = new (TaskCreationOptions.RunContinuationsAsynchronously);
+    IEnumerable<Products> products { get; set; }
+    DxDataGrid<Products> grid;
+
+    protected override async Task OnInitializedAsync() {
+        products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+        firstProductTcs.TrySetResult(products.FirstOrDefault());
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if(firstRender) {
+            var editableProduct = await firstProductTcs.Task;
+           // await grid.StartRowEdit(editableProduct);
+        }
+    }
+    async Task OnRowRemovingAsync(Products dataItem) {
+        await Http.DeleteAsync("api/Products/"+dataItem.Id);
+        products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+        StateHasChanged();
+
+    }
+    async Task OnRowUpdatingAsync(Products dataItem, IDictionary<string, object> newValues) {
+        var json = JsonConvert.SerializeObject(newValues, Newtonsoft.Json.Formatting.Indented);
+        var myobject = JsonConvert.DeserializeObject<Products>(json);
+        await Http.PutAsJsonAsync("api/Products/"+dataItem.Id, newValues);
+        products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+        StateHasChanged();
+
+    }
+    async Task OnRowInsertingAsync(IDictionary<string, object> newValues) { 
+       await Http.PostAsJsonAsync("api/Products", newValues);
+       products = await Http.GetFromJsonAsync<List<Products>>("api/Products");
+       StateHasChanged();
+
+    }
+    Task OnInitNewRowAsync(Dictionary<string, object> values) {
+        values.Add(nameof(Products.Id), 0);
+        values.Add(nameof(Products.ProductName), "Reem");
+        return Task.CompletedTask;
+    }
+   
+    public void Dispose() {
+        firstProductTcs.TrySetCanceled();
+    }
+
+}

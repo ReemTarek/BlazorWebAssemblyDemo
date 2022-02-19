@@ -1,0 +1,25 @@
+﻿@page "/scannercore"
+<h3>ScannerCorerazor</h3>
+@using BlazorBarcodeScanner.ZXing.JS
+<BlazorBarcodeScanner.ZXing.JS.BarcodeReader
+    OnCodeReceived="LocalReceivedBarcodeText"
+
+    Title="Scan Barcode from Camera"
+    StartCameraAutomatically="false"
+    ShowStart="true"
+    ShowReset="true"
+    ShowToggleTorch = "true"
+    ShowVideoDeviceList="true"
+    VideoWidth="300"
+    VideoHeight="200"
+ />
+ <p>@LocalBarcodeText</p>
+@code {
+  private string LocalBarcodeText="";
+
+    private void LocalReceivedBarcodeText(BarcodeReceivedEventArgs args)
+    {
+        LocalBarcodeText = args.BarcodeText;
+        //StateHasChanged();
+    }
+}
